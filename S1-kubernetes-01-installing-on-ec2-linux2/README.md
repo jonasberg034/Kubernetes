@@ -205,8 +205,10 @@ Run "kubectl apply -f [podnetwork].yaml" with one of the options listed at:
 
 Then you can join any number of worker nodes by running the following on each as root:
 
+- Asagidaki yazan kod control-plane olustugu zaman sistemin kendisi veriyor. Bu kodu kopyalayip worker node icin sudo komutu basta gireceksin. Video 2:19:00'dan sonrasini izle!!!!
+
 kubeadm join 172.31.19.226:6443 --token 9tx5zh.p6s4njz4f2lvzz1v \
-        --discovery-token-ca-cert-hash sha256:252671bcdd346adc2ecf7bf78defa1f27505b12947215930c5e1e57ccddcf037
+        --discovery-token-ca-cert-hash sha256:252671bcdd346adc2ecf7bf78defa1f27505b12947215930c5e1e57ccddcf037  
 ```
 
 > Note down the `kubeadm join ...` part in order to connect your worker nodes to the master node. Remember to run this command with `sudo`.
@@ -219,7 +221,7 @@ sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
 sudo chown $(id -u):$(id -g) $HOME/.kube/config
 ```
 
-- Activate the `Flannel` pod networking and explain briefly the about network add-ons on `https://kubernetes.io/docs/concepts/cluster-administration/addons/`.
+- Activate the `Flannel` pod networking and explain briefly the about network add-ons on `https://kubernetes.io/docs/concepts/cluster-administration/addons/`. 8472 portunu kullaniyor.
 
 ```bash
 kubectl apply -f https://github.com/coreos/flannel/raw/master/Documentation/kube-flannel.yml
@@ -257,6 +259,7 @@ kubectl get nodes
 ```
 
 - Run `sudo kubeadm join...` command to have them join the cluster.
+!!!! Eger bu komutla worker node'u master node'a baglayamiyorsan bu join.script.sh dostyasina gore yap.
 
 ```bash
 sudo kubeadm join 172.31.3.109:6443 --token 1aiej0.kf0t4on7c7bm2hpa \
