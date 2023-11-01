@@ -1,0 +1,22 @@
+- kubectl get nodes
+
+- kubectl get pods -n kube-system      
+# Show the list of the pods created for Kubernetes service itself. Note that pods of Kubernetes service are running on the master node.
+
+- kubectl get pods -n kube-system -o wide   
+# Show the details of pods in `kube-system` namespace. Note that pods of Kubernetes service are running on the master node.
+
+- kubectl get pods -o wide --all-namespaces    
+# Get the details of pods in all namespaces on master. Note that pods of Kubernetes service are running on the master node and also additional pods are running on the worker nodes to provide communication and management for Kubernetes service.
+
+- kubectl run nginx-server --image=nginx  --port=80  
+# Create and run a simple `Nginx` Server image.
+
+- kubectl expose pod nginx-server --port=80 --type=NodePort 
+# Expose the nginx-server pod as a new Kubernetes service on master.
+
+- kubectl get service -o wide 
+# Get the list of services and show the newly created service of `nginx-server`
+
+- kubectl delete service nginx-server
+- kubectl delete pods nginx-server
