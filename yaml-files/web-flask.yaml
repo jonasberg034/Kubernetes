@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  # namespace: clarus-namespace    # Namespae in yerlestigi yer. Ilk once namespace i olustur sonra dosyayi apply et.
+  name: web-flask-deploy
+  labels: 
+    app: web-flask
+  annotations:
+    kubernetes.io/change-cause: deploy/web-flask-deploy is set as web-flask-pod=clarusway/cw_web_flask1  
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: web-flask
+  minReadySeconds: 10    # Podlar ayaga kalktiktan sonra bunlarin saglik durumu kontrol edilem suresi. 10 sn bekle, eger hazir olmazsa oldur.
+  strategy:               # podlari update ederken
+    rollingUpdate:        
+      maxSurge: 1        # maksimum toplam pod sayisindan bes fazla ayaga kalksin
+      maxUnavailable: 1  # en fazla podlarin maximum 5 tanesi unavailable olsun
+    type: RollingUpdate  # iki tip var. Digeri Recreate.
+  template:
+    metadata:
+      labels:
+        app: web-flask
+    spec:
+      containers:
+      - name: web-flask-pod
+        image: clarusway/cw_web_flask1
+        # imagePullPolicy: IfNotPresent  # https://kubernetes.io/docs/concepts/containers/images/
+      # restartPolicy: Always  # https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/  
+        ports:
+        - containerPort: 5000
