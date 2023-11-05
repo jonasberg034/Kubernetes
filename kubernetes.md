@@ -313,3 +313,75 @@ pwd
 
 - Check the browser (`http://<public-workerNode-ip>:<node-port>`) that clarus-pod is running.
 
+## Binding PV to PVC
+
+- Create a `pv-3g.yaml` file using the following content with the volume type of `hostPath` to build a `PersistentVolume`.
+
+- code pv-3g.yaml
+
+> kubectl apply -f pv-3g.yaml
+
+- Create a `pv-6g.yaml` file using the following content with the volume type of `hostPath` to build a `PersistentVolume`.
+
+- code pv-6g.yaml
+
+> kubectl apply -f pv-6g.yaml
+
+- Create a `pv-claim-2g.yaml` file using the following content to create a `PersistentVolumeClaim`.
+
+- code pv-claim-2g.yaml
+
+> kubectl apply -f pv-claim-2g.yaml
+
+- Create another PersistentVolumeClaim file and name it `pv-claim-7g.yaml`.
+
+- code pv-claim-7g.yaml
+
+> kubectl apply -f pv-claim-7g.yaml
+
+## EmptyDir
+
+- An `emptyDir volume` is first created when a Pod is assigned to a node, and exists as long as that Pod is running on that node. 
+- As the name says, the emptyDir volume is initially empty. 
+- When a Pod is removed from a node for any reason, the data in the emptyDir is deleted permanently.
+
+_ Note : A container crashing does not remove a Pod from a node. The data in an emptyDir volume is safe across container crashes.
+
+- Create an `nginx-volume.yaml` file for creating an nginx pod.
+
+-code nginx-volume.yaml
+
+> kubectl apply -f nginx.yaml 
+
+> kubectl exec -it nginx-pod -- bash
+> root@nginx-pod:/# ls
+bin   dev                  docker-entrypoint.sh  home  lib64  mnt  proc  run   srv  test  usr
+boot  docker-entrypoint.d  etc                   lib   media  opt  root  sbin  sys  tmp   var
+
+> root@nginx-pod:/# cd test
+> root@nginx-pod:/test# echo "Hello World" > hello.txt 
+> root@nginx-pod:/test# cat hello.txt 
+Hello World
+
+> sudo ctr --namespace k8s.io containers ls
+
+- Log in the `kube-worker-1 ec2-instance` and remove the `nginx container`. Note that container is changed.
+
+- See the running containers
+
+> sudo ctr --namespace k8s.io tasks rm -f <container-id> 
+
+- Stop the running containers
+
+> sudo ctr --namespace k8s.io containers delete <container-id> 
+- Delete the running containers
+
+- Log in the kube-master ec2-instance again and connect the nginx-pod. See that test folder and content are there.
+
+> kubectl exec -it nginx-pod -- bash
+> root@nginx-pod:/# ls
+bin   dev                  docker-entrypoint.sh  home  lib64  mnt  proc  run   srv  test  usr
+boot  docker-entrypoint.d  etc                   lib   media  opt  root  sbin  sys  tmp   var
+> root@nginx-pod:/# cd test/
+> root@nginx-pod:/test# cat hello.txt 
+Hello World
