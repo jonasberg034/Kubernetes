@@ -264,3 +264,52 @@ Each Service that is created automatically gets an associated Endpoint object. T
 Kubernetes is constantly evaluating the Service’s label selector against the current list of Pods in the cluster. Any new Pods that match the selector get added to the Endpoint object, and any Pods that disappear get removed. This ensures the Service is kept up-to-date as Pods come and go.
 
 > kubectl get ep -o wide
+
+<VOLUME>
+
+> kubectl explain pv
+
+## Log into the `kube-worker-1` node, create a `pv-data` directory under home folder, also create an `index.html` file with `Welcome to Kubernetes persistence volume lesson` text and note down path of the `pv-data` folder.
+
+```bash 
+mkdir pv-data  && cd pv-data 
+echo "Welcome to Kubernetes persistence volume lesson" > index.html
+ls
+pwd
+/home/ubuntu/pv-data
+```
+- Create a `persistent-volume.yaml` file using the following content with the volume type of `hostPath` to build a `PersistentVolume` and explain fields.
+
+- code persisiten-volume.yaml
+
+- Create a `PersistentVolumeClaim.yaml` file using the following content to create a `PersistentVolumeClaim` and explain fields.
+
+- code PersistentVolumeClaim.yaml
+
+## After we create the PersistentVolumeClaim, the Kubernetes control plane looks for a PersistentVolume that satisfies the claim's requirements. If the control plane finds a suitable `PersistentVolume` with the same `StorageClass`, it binds the claim to the volume. Look for details at [Persistent Volumes and Claims](https://kubernetes.io/docs/concepts/storage/persistent-volumes/#introduction)
+
+> kubectl get pvc clarus-pv-claim
+
+- code PodWithPersisitentVolume.yaml
+
+> kubectl exec -it clarus-pod -- /bin/bash 
+- Open a shell to the container running in your Pod.
+
+> curl http://localhost/
+- Verify that `nginx` is serving the `index.html` file from the `hostPath` volume.
+
+> cd pv-data
+> echo "Kubernetes Rocks!!!!" > index.html
+- Log into the `kube-worker-1` node, change the `index.html`.
+
+> kubectl exec -it clarus-pod -- /bin/bash
+> curl http://localhost/
+- Log into the `kube-master` node, check if the change is in effect.
+
+> kubectl expose pod clarus-pod --port=80 --type=NodePort
+- Expose the clarus-pod pod as a new Kubernetes service on master.
+
+> kubectl get svc
+
+- Check the browser (`http://<public-workerNode-ip>:<node-port>`) that clarus-pod is running.
+
