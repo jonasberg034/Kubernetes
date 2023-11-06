@@ -267,6 +267,27 @@ Kubernetes is constantly evaluating the Service’s label selector against the c
 
 <VOLUME>
 
+- Volume type'lari var. Burada hostPath ve emptyDir tipleri gorulecek. 
+
+- hosthPath nod'un icinde olusur. emptyDir pod'a baglaniyor. Her ikisi de best practice kullanilan tipler degil. 
+
+- configMap: The configMap resource provides a way to inject configuration data, or shell commands and arguments into a Pod.
+
+- PerisitentVolume: is a piece of storage in the cluster that has been provided by an administrator o dynamically provisioned using Storage Classes.
+
+- Acces Modes
+- ReadWriteOnce: read-write by a single node
+- ReadOnlyMany: read-only by many nodes
+- ReadWriteMany: read-write by many nodes
+- ReadWriteOncePod: read-write only one pod in the cluster
+
+- PersistentVolumeClaims: is a request for storage by a user. It is similar to a Pod.Pods consume node resources and PVCs consume PV resources. Pods can request specific levls of resources (CPU and Memory). Claims can request specific size and acces modes. 
+once a suitable PV is found, it is bound to a PVC.
+
+- PV, PVC ve StorageClass birbir ile baglantili hususlar.
+
+- StorageClass objesi ile ilgili bili icin dokumentasyona bakiniz.
+
 > kubectl explain pv
 
 ## Log into the `kube-worker-1` node, create a `pv-data` directory under home folder, also create an `index.html` file with `Welcome to Kubernetes persistence volume lesson` text and note down path of the `pv-data` folder.
@@ -282,18 +303,30 @@ pwd
 
 - code persisiten-volume.yaml
 
+> k get pv -o wide
+NAME           CAPACITY  ACCESS MODES  RECLAIM POLICY  STATUS     CLAIM  STORAGECLASS  REASON   AGE   VOLUMEMODE
+clarus-pv-vol  5Gi       RWO           Retain          Available         manual                 78s   Filesystem
+
+- STATUS available demek hazir ancak bagli degil. Bu daha PVC'ye baglanacak.
+
+- RECLAIM POLICY Retain: Bir PVC yi sildigin zaman bu PV'yi silme anlamina geliyor. Ancak data sikinir. Data'nin silinmememsi icin baska bir policy uygulanmali.
+
 - Create a `PersistentVolumeClaim.yaml` file using the following content to create a `PersistentVolumeClaim` and explain fields.
 
 - code PersistentVolumeClaim.yaml
 
-## After we create the PersistentVolumeClaim, the Kubernetes control plane looks for a PersistentVolume that satisfies the claim's requirements. If the control plane finds a suitable `PersistentVolume` with the same `StorageClass`, it binds the claim to the volume. Look for details at [Persistent Volumes and Claims](https://kubernetes.io/docs/concepts/storage/persistent-volumes/#introduction)
+## After we create the PersistentVolumeClaim, the Kubernetes control plane looks for a PersistentVolume that satisfies the claim's requirements. If the control plane finds a suitable `PersistentVolume` with the same `StorageClass`, it <binds> the claim to the volume. Look for details at [Persistent Volumes and Claims](https://kubernetes.io/docs/concepts/storage/persistent-volumes/#introduction)
 
 > kubectl get pvc clarus-pv-claim
+
+> k get pv,pvc
+
+-PV ve PVC baglandi ancak hehangi bir pod'a atanmadi.
 
 - code PodWithPersisitentVolume.yaml
 
 > kubectl exec -it clarus-pod -- /bin/bash 
-- Open a shell to the container running in your Pod.
+- Open a shell to the container running in your Pod. POD'a baglanip bagladigimizvolume icindeki dosyayi kontrol ediyoruz.
 
 > curl http://localhost/
 - Verify that `nginx` is serving the `index.html` file from the `hostPath` volume.
@@ -307,7 +340,7 @@ pwd
 - Log into the `kube-master` node, check if the change is in effect.
 
 > kubectl expose pod clarus-pod --port=80 --type=NodePort
-- Expose the clarus-pod pod as a new Kubernetes service on master.
+- Expose the clarus-pod pod as a new Kubernetes service on master. bu sekilde pod'a servis atayip dis dunyadan volume icindeki yazan kodu gorebilirsin.
 
 > kubectl get svc
 
@@ -333,11 +366,15 @@ pwd
 
 > kubectl apply -f pv-claim-2g.yaml
 
+- Her ne kadar 2gb lik volume talep etmis olsan da sana 3 gblik tahsis edilir.
+
 - Create another PersistentVolumeClaim file and name it `pv-claim-7g.yaml`.
 
 - code pv-claim-7g.yaml
 
 > kubectl apply -f pv-claim-7g.yaml
+
+- Bu talep karsilanmaz. Cunku elimzide 6 GB volume var. 
 
 ## EmptyDir
 
@@ -351,7 +388,7 @@ _ Note : A container crashing does not remove a Pod from a node. The data in an 
 
 -code nginx-volume.yaml
 
-> kubectl apply -f nginx.yaml 
+> kubectl apply -f nginx-volume.yaml 
 
 > kubectl exec -it nginx-pod -- bash
 > root@nginx-pod:/# ls

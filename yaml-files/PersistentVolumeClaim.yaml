@@ -3,9 +3,9 @@ kind: PersistentVolumeClaim
 metadata:
   name: clarus-pv-claim
 spec:
-  storageClassName: manual
+  storageClassName: manual # persistent-volume.yaml dosyasi ile ayni olmali.
   accessModes:
-    - ReadWriteOnce
+    - ReadWriteOnce # persistent-volume.yaml dosyasi ile ayni olmali.
   resources:
     requests:
-      storage: 5Gi
+      storage: 5Gi # persistent-volume.yaml dosyasi ile ayni veya daha dsuk olmali.

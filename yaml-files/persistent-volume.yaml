@@ -11,4 +11,4 @@ spec:
   accessModes:
     - ReadWriteOnce
   hostPath:
-    path: "/home/ubuntu/pv-data"
+    path: "/home/ubuntu/pv-data"  # worker node' da olusturdugumuz pv-data'y bagla.
