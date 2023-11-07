@@ -17,6 +17,8 @@
 > kubectl get pods -n kube-system -o wide   
 - Show the details of pods in `kube-system` namespace. Note that pods of Kubernetes service are running on the master node.
 
+> kubectl get pods <pods-name> -o yaml 
+
 > kubectl get pods -o wide --all-namespaces    
 - Get the details of pods in all namespaces on master. Note that pods of Kubernetes service are running on the master node and also additional pods are running on the worker nodes to provide communication and management for Kubernetes service.
 
@@ -170,8 +172,10 @@ kube-system       Active   4h37m
 
 > kubectl create deployment default-ns --image=nginx  
 - default namespace'te nginx imajindan default-ns deployment'unu olusturan komut
+
 > kubectl create deployment clarus-ns --image=nginx -n=clarus-namespace  
 - clarus-namespace'te nginx imajindan clarus-ns deployment'unu olusuran komut.
+
 - Create pods in each namespace.
 
 > kubectl get deployment -n clarus-namespace
@@ -378,8 +382,10 @@ clarus-pv-vol  5Gi       RWO           Retain          Available         manual 
 
 ## EmptyDir
 
-- An `emptyDir volume` is first created when a Pod is assigned to a node, and exists as long as that Pod is running on that node. 
-- As the name says, the emptyDir volume is initially empty. 
+- An `emptyDir volume` is first created when a Pod is assigned to a node, and exists as long as that Pod is running on that node.
+
+- As the name says, the emptyDir volume is initially empty.
+
 - When a Pod is removed from a node for any reason, the data in the emptyDir is deleted permanently.
 
 _ Note : A container crashing does not remove a Pod from a node. The data in an emptyDir volume is safe across container crashes.
@@ -393,21 +399,19 @@ _ Note : A container crashing does not remove a Pod from a node. The data in an 
 > kubectl exec -it nginx-pod -- bash
 > root@nginx-pod:/# ls
 bin   dev                  docker-entrypoint.sh  home  lib64  mnt  proc  run   srv  test  usr
-boot  docker-entrypoint.d  etc                   lib   media  opt  root  sbin  sys  tmp   var
+ boot  docker-entrypoint.d  etc                   lib   media  opt  root  sbin  sys  tmp   var
 
 > root@nginx-pod:/# cd test
 > root@nginx-pod:/test# echo "Hello World" > hello.txt 
 > root@nginx-pod:/test# cat hello.txt 
 Hello World
 
-> sudo ctr --namespace k8s.io containers ls
-
 - Log in the `kube-worker-1 ec2-instance` and remove the `nginx container`. Note that container is changed.
 
+> sudo ctr --namespace k8s.io containers ls
 - See the running containers
 
 > sudo ctr --namespace k8s.io tasks rm -f <container-id> 
-
 - Stop the running containers
 
 > sudo ctr --namespace k8s.io containers delete <container-id> 
@@ -425,7 +429,7 @@ Hello World
 
 <SECRETS> 
 
-- Secrets can contain user credentials required by Pods to access a database. For example, a database connection string consists of a username and password. You can store the username in a file ./username.txt and the password in a file ./password.txt on your local machine.
+- Secrets (an object in Kubernetes) can contain user credentials required by Pods to access a database. For example, a database connection string consists of a username and password. You can store the username in a file ./username.txt and the password in a file ./password.txt on your local machine.
 
 - The kubectl create secret command packages these files into a Secret and creates the object on the API server. The name of a Secret object must be a valid DNS subdomain name. Show types of secrets with opening : (Kubetnetes Secret Types)[https://kubernetes.io/docs/concepts/configuration/secret/]
 
@@ -433,6 +437,14 @@ Hello World
 > echo -n '1f2d1e2e67df' > ./password.txt
 
 - Create files needed for the rest of the example.
+
+> kubectl create secret --help
+
+Outputs:
+- Available Commands:
+  docker-registry   Create a secret for use with a Docker registry
+  generic           Create a secret from a local file, directory, or literal value
+  tls               Create a TLS secret
 
 > kubectl create secret generic db-user-pass --from-file=./username.txt --from-file=./password.txt
 
