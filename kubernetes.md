@@ -422,3 +422,172 @@ boot  docker-entrypoint.d  etc                   lib   media  opt  root  sbin  s
 > root@nginx-pod:/# cd test/
 > root@nginx-pod:/test# cat hello.txt 
 Hello World
+
+<SECRETS> 
+
+- Secrets can contain user credentials required by Pods to access a database. For example, a database connection string consists of a username and password. You can store the username in a file ./username.txt and the password in a file ./password.txt on your local machine.
+
+- The kubectl create secret command packages these files into a Secret and creates the object on the API server. The name of a Secret object must be a valid DNS subdomain name. Show types of secrets with opening : (Kubetnetes Secret Types)[https://kubernetes.io/docs/concepts/configuration/secret/]
+
+> echo -n 'admin' > ./username.txt
+> echo -n '1f2d1e2e67df' > ./password.txt
+
+- Create files needed for the rest of the example.
+
+> kubectl create secret generic db-user-pass --from-file=./username.txt --from-file=./password.txt
+
+> kubectl create secret generic db-user-pass-key --from-file=username=./username.txt --from-file=password=./password.txt
+
+## Special characters such as `$`, `\`, `*`, `=`, and `!` will be interpreted by your shell and require escaping. In most shells, the easiest way to escape the password is to surround it with single quotes (`'`). For example, if your actual password is S!B\*d$zDsb=, you should execute the command this way:
+
+> kubectl create secret generic dev-db-secret --from-literal=username=devuser --from-literal=password='S!B\*d$zDsb='
+
+> kubectl get secrets
+
+> kubectl describe secrets/db-user-pass
+
+- The commands kubectl get and kubectl describe avoid showing the contents of a secret by default. This is to protect the secret from being exposed accidentally to an onlooker, or from being stored in a terminal log.
+
+## Creating a Secret manually
+
+- You can also create a Secret in a file first, in JSON or YAML format, and then create that object. The name of a Secret object must be a valid DNS subdomain name. The Secret contains two maps: data and stringData. The data field is used to store arbitrary data, encoded using base64. The stringData field is provided for convenience, and allows you to provide secret data as unencoded strings.
+
+- For example, to store two strings in a Secret using the data field, convert the strings to base64 as follows:
+
+> echo -n 'admin' | base64
+
+- The output is similar to: YWRtaW4=
+
+> echo -n '1f2d1e2e67df' | base64
+
+- The output is similar to: MWYyZDFlMmU2N2Rm
+
+- Write a Secret that looks like this named `secret.yaml`:
+
+- code secret.yaml
+
+> kubectl apply -f ./secret.yaml
+
+### Decoding a Secret
+
+> kubectl get secret mysecret -o yaml
+
+> echo 'MWYyZDFlMmU2N2Rm' | base64 --decode
+
+- Decode the password field. - The output is similar to: 1f2d1e2e67df
+
+### Using Secrets
+
+- Firstly we get the parameters as plain environment variable.
+
+- code mysecret-pod.yaml
+
+> kubectl apply -f mysecret-pod.yaml
+
+> kubectl exec -it secret-env-pod -- bash
+> root@secret-env-pod:/data# echo $SECRET_USERNAME
+admin
+> root@secret-env-pod:/data# echo $SECRET_PASSWORD
+1f2d1e2e67df
+
+> kubectl delete -f mysecret-pod.yaml
+
+- This time we get the environment variables from secret objects. <Modify> the mysecret-pod.yaml as below.
+
+- code mysecret-pod-modify.yaml
+
+> kubectl apply -f mysecret-pod-modify.yaml
+
+### Consuming Secret Values from environment variables
+
+- Inside a container that consumes a secret in an environment variables, the secret keys appear as normal environment variables containing the base64 decoded values of the secret data. This is the result of commands executed inside the container from the example above:
+
+> kubectl exec -it secret-env-pod -- bash
+> root@secret-env-pod:/data# echo $SECRET_USERNAME
+admin
+> root@secret-env-pod:/data# echo $SECRET_PASSWORD
+1f2d1e2e67df
+
+<CONFIGMAPS>
+
+- A ConfigMap is a dictionary of configuration settings. This dictionary consists of key-value pairs of strings. Kubernetes provides these values to your containers. Like with other dictionaries (maps, hashes, ...) the key lets you get and set the configuration value.
+
+- A ConfigMap stores configuration settings for your code. Store connection strings, public credentials, hostnames, environment variables, container command line arguments and URLs in your ConfigMap.
+
+- ConfigMaps bind configuration files, command-line arguments, environment variables, port numbers, and other configuration artifacts to your Pods' containers and system components at runtime.
+
+- ConfigMaps allow you to separate your configurations from your Pods and components. 
+
+- ConfigMap helps to makes configurations easier to change and manage, and prevents hardcoding configuration data to Pod specifications.
+
+- ConfigMaps are useful for storing and sharing non-sensitive, unencrypted configuration information.
+
+- For the show case we will select a simple application that displays a message like this.
+
+```text
+Hello, Clarusway!
+```
+
+- We will parametrized the "Hello" portion in some languages.
+
+- code deployment-demo.yaml
+
+- code service-demo.yaml
+
+> kubectl apply -f deployment-demo.yaml,service-demo.yaml
+
+> kubectl get svc demo-service -o wide
+
+- Let's see the message.
+
+```bash
+kubectl get svc demo-service -o wide
+NAME           TYPE           CLUSTER-IP    EXTERNAL-IP   PORT(S)        AGE     SELECTOR
+demo-service   LoadBalancer   10.97.39.39   <pending>     80:30001/TCP   2m20s   app=demo
+
+curl < worker-ip >:30001
+Hello, Clarusway!
+```
+
+> kubectl delete -f .
+
+- We have modified the application to take the greeting message as a parameter (environmental variable). So we will expose configuration data into the container’s environmental variables. Firstly, let's see how to pass environment variables to pods.
+
+- Modify the `deployment-demo.yaml` as below.
+
+- code deployment-demo-modified.yaml
+
+> kubectl apply -f deployment-demo-modified.yaml
+
+Let's see the message.
+
+```bash
+kubectl get svc demo-service -o wide
+NAME           TYPE           CLUSTER-IP    EXTERNAL-IP   PORT(S)        AGE     SELECTOR
+demo-service   LoadBalancer   10.97.39.39   <pending>     80:30001/TCP   2m20s   app=demo
+
+curl < worker-ip >:30001
+selam, Clarusway!
+```
+
+> kubectl delete -f .
+
+- This time we will expose configuration data into the container’s environmental variables. And,  we will create `ConfigMap` and use the `greeting` key-value pair as in the `deployment.yaml` file.
+
+## Create and use ConfigMaps with `kubectl create configmap` command
+
+There are three ways to create ConfigMaps using the `kubectl create configmap` command. Here are the options.
+
+1. Use the contents of an entire directory with `kubectl create configmap my-config --from-file=./my/dir/path/`
+   
+2. Use the contents of a file or specific set of files with `kubectl create configmap my-config --from-file=./my/file.txt`
+   
+3. Use literal key-value pairs defined on the command line with `kubectl create configmap my-config --from-literal=key1=value1 --from-literal=key2=value2`
+
+### Literal key-value pairs
+
+We will start with the third option. We have just one parameter. Greet with "Halo" in Spanish.
+
+> kubectl create configmap demo-config --from-literal=greeting=Hola
+
+> kubectl get configmap/demo-config -o yaml
