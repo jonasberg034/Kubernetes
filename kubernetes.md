@@ -28,6 +28,9 @@
 > kubectl expose pod nginx-server --port=80 --type=NodePort 
 - Expose the nginx-server pod as a new Kubernetes service on master.
 
+> kubectl create deploy jonas-deploy --image=nginx --dry-run=client -o yaml > jonas-deploy.yaml
+- jonas-deploy adinda nginx imajindan olusmasini istedigim deployment'un yaml dosyasini jonas-deploy.yaml dosyasina yazdirdim.
+
 > kubectl get service -o wide 
 - Get the list of services and show the newly created service of `nginx-server`
 
@@ -305,7 +308,7 @@ pwd
 ```
 - Create a `persistent-volume.yaml` file using the following content with the volume type of `hostPath` to build a `PersistentVolume` and explain fields.
 
-- code persisiten-volume.yaml
+- code persistent-volume.yaml
 
 > k get pv -o wide
 NAME           CAPACITY  ACCESS MODES  RECLAIM POLICY  STATUS     CLAIM  STORAGECLASS  REASON   AGE   VOLUMEMODE
@@ -450,9 +453,17 @@ Outputs:
 
 > kubectl create secret generic db-user-pass-key --from-file=username=./username.txt --from-file=password=./password.txt
 
-## Special characters such as `$`, `\`, `*`, `=`, and `!` will be interpreted by your shell and require escaping. In most shells, the easiest way to escape the password is to surround it with single quotes (`'`). For example, if your actual password is S!B\*d$zDsb=, you should execute the command this way:
+> kubectl create secret generic dev-db-secret --from-literal=username=devuser --from-literal=password='S!B\*d$zDsb=' 
 
-> kubectl create secret generic dev-db-secret --from-literal=username=devuser --from-literal=password='S!B\*d$zDsb='
+- literal metodu ile password olusturma. Direkt atama yapiyorsun.
+
+> kubectl create secret generic my-secret --from-literal=username=devuser --from-literal=password='S!B\*d$zDsb=' --dry-run=client -o yaml > mysecret.yaml
+
+- Bu yontem ile mysecret.yamldosyasi olusturabilirsin.
+
+- Yukaridaki uc komut farkli. Uc farkli sekilde secret olusturuluyor. Detay icin video 49:00 dakikasi bknz.
+
+## Special characters such as `$`, `\`, `*`, `=`, and `!` will be interpreted by your shell and require escaping. In most shells, the easiest way to escape the password is to surround it with single quotes (`'`). For example, if your actual password is S!B\*d$zDsb=, you should execute the command this way:
 
 > kubectl get secrets
 
@@ -460,7 +471,7 @@ Outputs:
 
 - The commands kubectl get and kubectl describe avoid showing the contents of a secret by default. This is to protect the secret from being exposed accidentally to an onlooker, or from being stored in a terminal log.
 
-## Creating a Secret manually
+## Creating a Secret manually (dorduncu yontem=)
 
 - You can also create a Secret in a file first, in JSON or YAML format, and then create that object. The name of a Secret object must be a valid DNS subdomain name. The Secret contains two maps: data and stringData. The data field is used to store arbitrary data, encoded using base64. The stringData field is provided for convenience, and allows you to provide secret data as unencoded strings.
 
@@ -504,7 +515,7 @@ admin
 
 > kubectl delete -f mysecret-pod.yaml
 
-- This time we get the environment variables from secret objects. <Modify> the mysecret-pod.yaml as below.
+- This time we get the environment variables from secret objects. <modify> the mysecret-pod.yaml as below.
 
 - code mysecret-pod-modify.yaml
 
@@ -590,11 +601,14 @@ selam, Clarusway!
 
 There are three ways to create ConfigMaps using the `kubectl create configmap` command. Here are the options.
 
-1. Use the contents of an entire directory with `kubectl create configmap my-config --from-file=./my/dir/path/`
+1. Use the contents of an entire directory with 
+> kubectl create configmap my-config --from-file=./my/dir/path/
    
-2. Use the contents of a file or specific set of files with `kubectl create configmap my-config --from-file=./my/file.txt`
+2. Use the contents of a file or specific set of files with 
+> kubectl create configmap my-config --from-file=./my/file.txt
    
-3. Use literal key-value pairs defined on the command line with `kubectl create configmap my-config --from-literal=key1=value1 --from-literal=key2=value2`
+3. Use literal key-value pairs defined on the command line with 
+> kubectl create configmap my-config --from-literal=key1=value1 --from-literal=key2=value2
 
 ### Literal key-value pairs
 
@@ -602,4 +616,59 @@ We will start with the third option. We have just one parameter. Greet with "Hal
 
 > kubectl create configmap demo-config --from-literal=greeting=Hola
 
+> kubectl get cm
+
 > kubectl get configmap/demo-config -o yaml
+
+> kubectl delete cm demo-config
+
+- code configmap.yaml
+
+- code deployment-demo-modified-config.yaml
+
+> kubectl apply -f deployment-demo-modified-config.yaml,configmap.yaml,service-demo.yaml
+
+> kubectl delete -f deployment-demo-modified-config.yaml,configmap.yaml,service-demo.yaml
+
+## Configure all key-value pairs in a ConfigMap as container environment variables in POSIX format
+
+- In case if you are using envFrom  instead of env  to create environmental variables in the container, the environmental names will be created from the ConfigMap's keys. If a ConfigMap  key has invalid environment variable name, it will be skipped but the pod will be allowed to start. 
+
+Modify configmap.yaml file:
+
+- code configmap-modified.yaml
+
+- code deployment-demo-modifie-config-modified.yaml
+
+Note the change as follows:
+
+```yaml
+...
+          envFrom:
+          - configMapRef:
+              name: demo-config
+```
+### From a config file
+
+- We will write the greeting key-value pair in a file in Norwegian and create the ConfigMap from this file.
+
+> echo "greeting: Hei" > config
+
+> kubectl create configmap demo-config --from-file=./config
+
+- Check the content of the `configmap/demo-config`.
+> kubectl get configmap/demo-config -o json
+
+- Delete the ConfigMap.
+
+## Using ConfigMaps as files from a Pod 
+
+- code configmapPod.yaml
+
+- code depolyment-demo-configmapPod.yaml
+
+- Volume and volume mounting are common ways to place config files inside a container. We are selecting `config` key from `demo-config` ConfigMap and put it inside the container at path `/config/` with the name `demo.yaml`.
+
+
+
+

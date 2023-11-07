@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jonas-deployment
+  labels:
+    environment: dev
+  # namespace: jonas-namespace   
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx-jonas
+  minReadySeconds: 10    # Podlar ayaga kalktiktan sonra bunlarin saglik durumu kontrol edilem suresi. 10 sn bekle, eger hazir olmazsa oldur.
+  strategy:               # podlari update ederken
+    rollingUpdate:        
+      maxSurge: 1        # maksimum toplam pod sayisindan bes fazla ayaga kalksin
+      maxUnavailable: 1  # en fazla podlarin maximum 5 tanesi unavailable olsun
+    type: RollingUpdate       
+  template:
+    metadata:
+      labels:
+        app: nginx-jonas
+    spec:
+      volumes:
+      - name: clarus-pv-storage
+        persistentVolumeClaim:
+          claimName: clarus-pv-claim
+      containers:
+      - name: nginx-jonas
+        image: nginx
+        ports:
+        - containerPort: 80
+        volumeMounts:
+          - mountPath: "/usr/share/nginx/html"
+            name: clarus-pv-storage        
+        resources: {}    
+      restartPolicy: Always      

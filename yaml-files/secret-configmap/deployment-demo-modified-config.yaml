@@ -19,4 +19,9 @@ spec:
             - containerPort: 8888
           env:
             - name: GREETING
-              value: selam
+              valueFrom:
+                configMapKeyRef:
+                  name: demo-config
+                  key: greeting
+          resources: {}
+                  
