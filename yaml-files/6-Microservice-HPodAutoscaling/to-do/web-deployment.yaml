@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-deployment
+  labels:
+    app: todoapp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: web           # Asagida template > metadata > labels > name:web
+  template:
+    metadata:
+      labels:
+        name: web
+        app: todoapp
+    spec:
+      containers: 
+        - image: clarusway/todo
+          imagePullPolicy: Always
+          name: myweb
+          ports: 
+            - containerPort: 3000 # Dockerfile'dan bakiyoruz.
+          env:
+            - name: "DBHOST"      # Developerlar'in hazirladigi dosyalar icinden bul. todo-app > app > db.js icerisinde
+              value: db-service   # Database icin hazirlanan service objesi ile bagliyoruz. db-service.yaml dosyasindan al.
+          resources:
+            limits:               # Pod en fazla bu kadar kullanabilir.
+              memory: 500Mi   
+              cpu: 100m
+            requests:             # Pod icin olusturulur. Her bir Pod bu kadar olmali. 250 mb'i asarsa podu olduruur. CPU'yu asarsa oldurmez, sadece durdurur.
+              memory: 250Mi
+              cpu: 80m	

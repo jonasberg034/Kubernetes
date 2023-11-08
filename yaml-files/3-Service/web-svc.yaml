@@ -6,10 +6,10 @@ metadata:
   labels:
     app: web-flask
 spec:
+  selector:
+    app: web-flask  # web-flask.yaml dosyasindaki spec > template > metadata > labels > app:web-flask
   type: NodePort # ClusterIP Default deger
   ports:
   - port: 3000  # servisin portu. Biz verdik bu degeri.
     targetPort: 5000  # Baglamak itedigimiz Pod'un port numarasi. containerPort bknz. web-flask.yaml dosyasi
     nodePort: 30001 
-  selector:
-    app: web-flask  # Baglamak istedigimiz pod'un labels --> app:web-flask ile ayni olacak. Bknz web-flask.yaml

@@ -11,8 +11,8 @@ spec:
   replicas: 3
   selector:
     matchLabels:
-      app: web-flask
-  minReadySeconds: 10    # Podlar ayaga kalktiktan sonra bunlarin saglik durumu kontrol edilem suresi. 10 sn bekle, eger hazir olmazsa oldur.
+      app: web-flask      # Asagida template > metadata > labels > app:web-flask
+  minReadySeconds: 10     # Podlar ayaga kalktiktan sonra bunlarin saglik durumu kontrol edilem suresi. 10 sn bekle, eger hazir olmazsa oldur.
   strategy:               # podlari update ederken
     rollingUpdate:        
       maxSurge: 1        # maksimum toplam pod sayisindan bes fazla ayaga kalksin

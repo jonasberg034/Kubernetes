@@ -679,5 +679,107 @@ cd config | ls
 cat demo.yaml
  
 
+<MICROSERVICE> and <HPA>
 
+1. We will deploy the `to-do` app first and look at some key points.
+2. And then deploy the `php-apache` app and highligts some important points.
+3. The Autoscaling in Kubernetes will be  demonstrated as a last step.
 
+- code db-pv.yaml
+
+-code db-pvc.yaml
+
+- code db.deployment.yaml    for MongoDB database
+
+- code db-service.yaml
+
+```bash
+ - Mongodb icin deployment olusturuken DockerHub'tan MongoDb imaji ile ilgili dokumantasyona bakilacak!!!!
+ - ContainerPort, environment variables, Volume mounts gibi hususlar oradan alinacak
+ ```
+
+ > kubectl apply -f . 
+
+ > kubectl describe svc db-service veya kubectl get endpoints
+- db-service ile pod eslesmi onu kontrol ederiz. Endpoint olusmus. Demekki basarili.
+
+- code web-deployment.yaml
+
+- code web-service.yaml
+
+### Note that this web app is connnected to MongoDB host/service via the `DBHOST` environment variable.
+
+> kubectl apply -f .
+
+### Deploy the second aplication
+
+- code php-apache.yaml
+
+> kubectl apply -f .
+
+### Part 4 - Autoscaling in Kubernetes
+### Create Horizontal Pod Autoscaler
+
+> kubectl autoscale deployment php-apache --cpu-percent=50 --min=2 --max=10
+
+> kubectl autoscale deployment web-deployment --cpu-percent=50 --min=3 --max=5 
+
+or we can use yaml files.
+
+- code hpa-php-apache.yaml
+- code hpa-web.yaml
+
+> kubectl apply -f .
+
+- php-apache Pod number increased to 2, minimum number. 
+- web-deployment Pod number increased to 3, minimum number. 
+- The HPA line under TARGETS shows `<unknown>/50%`. The `unknown` means the HPA can't idendify the current use of CPU.
+
+> k get hpa
+
+> watch -n3 kubectl get service,hpa,pod -o wide 
+
+### Install Metric Server
+
+> kubectl delete -n kube-system deployments.apps metrics-server
+- First Delete the existing Metric Server if any.
+
+> wget https://github.com/kubernetes-sigs/metrics-server/releases/download/v0.6.3/components.yaml
+- Get the Metric Server form [GitHub](https://github.com/kubernetes-sigs/metrics-server/releases/tag/v0.6.3).
+
+- Edit the file `components.yaml`. You will select the `Deployment` part in the file. Add the below line to `containers.args field under the deployment object`. Guvenlik engeline takilmamak icin asagidaki yazanlari componenets.yaml dosyasindak ilgili yere ej\kledik. 136 nci satirdan sonra.
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+......
+      containers:
+      - args:
+        - --cert-dir=/tmp
+        - --secure-port=4443
+        - --kubelet-insecure-tls
+        - --kubelet-preferred-address-types=InternalIP,ExternalIP,Hostname
+        - --kubelet-use-node-status-port
+        - --metric-resolution=15s
+......	
+```
+> kubectl apply -f components.yaml
+
+> kubectl -n kube-system get pods
+- Verify the existace of `metrics-server` run by above command.
+
+> kubectl top pods
+- Verify `metrics-server` can access resources of the pods and nodes.
+-  The top command allows you to see the resource consumption for nodes or pods.
+
+> kubectl top nodes
+
+### Increase load
+
+> kubectl run -it --rm load-generator --image=busybox /bin/sh  
+
+Hit enter for command prompt
+
+> while true; do wget -q -O- http://<puplic ip>:<port number of php-apache-service>; done 
+veya
+>  while true; do wget -q -O- http://<puplic ip>:<port number of web-service> > /dev/null; done  # calisan dosayi dev/null dosyasina at, kaydetme.

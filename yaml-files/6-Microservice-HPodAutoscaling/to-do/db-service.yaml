@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: db-service
+  labels:
+    name: mongo
+    app: todoapp
+spec:
+  selector:
+    name: mongo
+  type: ClusterIP
+  ports:
+    - name: db
+      port: 27017  # servisin portu. Best practice ayni olur.
+      targetPort: 27017  # container port
