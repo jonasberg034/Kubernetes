@@ -652,7 +652,7 @@ Note the change as follows:
 
 - We will write the greeting key-value pair in a file in Norwegian and create the ConfigMap from this file.
 
-> echo "greeting: Hei" > config
+> echo "greeting: Hei" > config  # Bu komut hatali olabilir. 
 
 > kubectl create configmap demo-config --from-file=./config
 
@@ -665,10 +665,19 @@ Note the change as follows:
 
 - code configmapPod.yaml
 
-- code depolyment-demo-configmapPod.yaml
+- code depolyment-with-configmapPod.yaml
 
 - Volume and volume mounting are common ways to place config files inside a container. We are selecting `config` key from `demo-config` ConfigMap and put it inside the container at path `/config/` with the name `demo.yaml`.
 
+> kubectl apply -f deployment-with-configmapPod.yaml,service-demo.yaml,configmapPod.yaml
+
+> kubectl exec -it demo-5bf545f76-qppwf -- sh
+ls
+- config ismindeki dizini gor!
+cd config | ls
+- demo.yaml dosyasini gor!
+cat demo.yaml
+ 
 
 
 
