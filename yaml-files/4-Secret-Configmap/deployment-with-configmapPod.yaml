@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name:  demo
-          image: clarusway/demo:hello-config-file
+          image: clarusway/demo:hello-config-file  # imaj daha onceki imajlardan farkli.
           ports:
             - containerPort: 8888
           volumeMounts:
