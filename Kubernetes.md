@@ -783,3 +783,107 @@ Hit enter for command prompt
 > while true; do wget -q -O- http://<puplic ip>:<port number of php-apache-service>; done 
 veya
 >  while true; do wget -q -O- http://<puplic ip>:<port number of web-service> > /dev/null; done  # calisan dosayi dev/null dosyasina at, kaydetme.
+
+<EKS>
+
+- Launch an AWS EC2 instance of Amazon Linux 2 AMI with security group allowing SSH.
+
+- Connect to the instance with SSH.
+
+- Update the installed packages and package cache on your instance.
+
+> sudo yum update -y
+
+> curl -O https://s3.us-west-2.amazonaws.com/amazon-eks/1.25.7/2023-03-17/bin/linux/amd64/kubectl
+- - Download the Amazon EKS vended kubectl binary that is compatible with kubernetes cluster version.
+
+> chmod +x ./kubectl
+
+> mkdir -p $HOME/bin && cp ./kubectl $HOME/bin/kubectl && export PATH=$PATH:$HOME/bin
+- Copy the binary to a folder in your PATH. If you have already installed a version of kubectl, then we recommend creating a $HOME/bin/kubectl and ensuring that $HOME/bin comes first in your $PATH.
+
+> echo 'export PATH=$PATH:$HOME/bin' >> ~/.bashrc
+- (Optional) Add the $HOME/bin path to your shell initialization file so that it is configured when you open a shell.
+
+> kubectl version --short --client
+- After you install kubectl , you can verify its version with the command:
+
+> aws configure
+- Configure AWS credentials. Or you can attach `AWS IAM Role` to your EC2 instance.
+
+- aws configuration
+
+```bash
+  aws configure
+  AWS Access Key ID [None]: xxxxxxx
+  AWS Secret Access Key [None]: xxxxxxxx
+  Default region name [None]: us-east-1
+  Default output format [None]: json
+  ```
+
+> aws eks list-clusters
+- Verify that you can see your cluster listed, when authenticated
+
+## Part 1 - Creating the Kubernetes Cluster on EKS
+
+3. Select ```Cluster``` on the left-hand menu and click on "Create cluster" button. You will be directed to the ```Configure cluster``` page:
+
+    - Fill the ```Name``` and ```Kubernetes version``` fields. (Ex: MyCluster, 1.25)
+
+    - On the ```Cluster Service Role``` field; give general description about why we need this role. 
+
+    - Create EKS Cluster Role with ```EKS - Cluster``` use case and ```AmazonEKSClusterPolicy```.
+                
+        - EKS Cluster Role :                                                                                          
+           - use case   :  ```EKS - Cluster``` 
+           - permissions: ```AmazonEKSClusterPolicy```.
+
+    - Select the recently created role, back on the ```Cluster Service Role``` field.
+
+    - Proceed to the ```Secrets Encryption``` field. 
+    
+    - Activate the field, give general description about ```KMS Service``` and describe where we use those keys and give an example about a possible key.
+
+    - Deactivate back the ```Secrets Encryption``` field and keep it as is.
+
+    - Proceed to the next step (Specify Networking).
+
+4. On the ```Specify Networking``` page's ```Networking field```:
+
+    - Select the default VPC and a,b,c public subnets.
+
+    - Select default VPC security or create one with <SSH> and <HTTPS> 
+
+    - Proceed to ```Cluster Endpoint Access``` field.
+
+    - Select ```Public and Private``` option on the field.
+
+    - Proceed to the next step (Configure Logging).
+
+5. On the ```Configure Logging``` page:
+
+    - Proceed to the final step (Review and create).
+
+6. On the ```Review and create``` page:
+
+    - Create the cluster.
+
+## Part 2 - Creating a kubeconfig file
+
+> aws eks list-clusters
+```bash
+{
+  "clusters": [
+    "my-cluster"
+  ]
+}
+```
+
+> aws eks --region <us-east-1> update-kubeconfig --name <cluster_name>
+
+> kubectl get svc
+
+> kubectl get node
+
+
+## Part 3 - Adding Worker Nodes to the Cluster
