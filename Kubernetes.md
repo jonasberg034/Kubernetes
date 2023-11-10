@@ -1030,3 +1030,249 @@ AWS Console > Cluster > Node-groups > <groupname> sil
 AWS Console > Cluster > <clustername> sil
 
 AWS Console > EC2 >  sil
+
+<STORAGECLASS> <INGRESS>
+
+# Dynamic Volume Provisionining and Ingress
+
+## Part 1 - Installing kubectl and eksctl on Amazon Linux 2
+
+### Install kubectl
+
+- Launch an AWS EC2 instance of Amazon Linux 2 AMI with security group allowing SSH.
+
+- Connect to the instance with SSH.
+
+- Update the installed packages and package cache on your instance.
+
+> sudo yum update -y
+
+- Download the Amazon EKS vended kubectl binary.
+
+> curl -O https://s3.us-west-2.amazonaws.com/amazon-eks/1.25.7/2023-03-17/bin/linux/amd64/kubectl
+- Guncel download edilecek dosya burada https://docs.aws.amazon.com/eks/latest/userguide/install-kubectl.html
+
+> chmod +x ./kubectl
+
+- Copy the binary to a folder in your PATH. If you have already installed a version of kubectl, then we recommend creating a $HOME/bin/kubectl and ensuring that $HOME/bin comes first in your $PATH.
+
+> mkdir -p $HOME/bin && cp ./kubectl $HOME/bin/kubectl && export PATH=$PATH:$HOME/bin
+
+> echo 'export PATH=$PATH:$HOME/bin' >> ~/.bashrc
+
+> kubectl version --client
+
+### Install eksctl
+
+- Download and extract the latest release of eksctl with the following command.
+
+> curl --silent --location "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz" | tar xz -C /tmp
+
+- Su siteden de 'eksctl'i inceleyebilirsin.
+https://eksctl.io/getting-started/ 
+
+- Move the extracted binary to /usr/local/bin.
+
+
+> sudo mv /tmp/eksctl /usr/local/bin
+
+> eksctl version
+
+## Part 2 - Creating the Kubernetes Cluster on EKS
+
+- If needed create ssh-key with command `ssh-keygen -f ~/.ssh/id_rsa`.
+
+- Configure AWS credentials. Or you can attach `AWS IAM Role` to your EC2 instance.
+
+> aws configure
+
+- Create an EKS cluster via `eksctl`. It will take a while.
+
+```bash
+eksctl create cluster \
+ --name cw-cluster \
+ --region us-east-1 \
+ --zones us-east-1a,us-east-1b,us-east-1c \
+ --nodegroup-name my-nodes \
+ --node-type t3a.medium \
+ --nodes 2 \
+ --nodes-min 2 \
+ --nodes-max 3 \
+ --ssh-access \
+ --ssh-public-key  ~/.ssh/id_rsa.pub \  # bu komut ile key olusuyor. Podlara ulasmak icin gerekli olabilir. Burasi zorunlu degil.
+ --managed
+```
+
+or 
+
+> eksctl create cluster --region us-east-1 --zones us-east-1a,us-east-1b,us-east-1c --node-type t3a.medium --nodes 2 --nodes-min 2 --nodes-max 3 --name cw-cluster
+
+> eksctl create cluster --help
+
+## Part 3 - Dynamic Volume Provisionining
+
+### The Amazon Elastic Block Store (Amazon EBS) Container Storage Interface (CSI) driver
+
+- The Amazon Elastic Block Store (Amazon EBS) Container Storage Interface (CSI) driver allows Amazon Elastic Kubernetes Service (Amazon EKS) clusters to manage the lifecycle of Amazon EBS volumes for persistent volumes.
+
+- The Amazon EBS CSI driver isn't installed when you first create a cluster. To use the driver, you must add it as an Amazon EKS add-on or as a self-managed add-on. 
+
+- Install the Amazon EBS CSI driver. For instructions on how to add it as an Amazon EKS add-on, see Managing the [Amazon EBS CSI driver as an Amazon EKS add-on](https://docs.aws.amazon.com/eks/latest/userguide/managing-ebs-csi.html).
+
+### Creating an IAM OIDC provider for your cluster
+
+- To use AWS EBS CSI, it is required to have an AWS Identity and Access Management (IAM) OpenID Connect (OIDC) provider for your cluster. 
+
+- Determine whether you have an existing IAM OIDC provider for your cluster. Retrieve your cluster's OIDC provider ID and store it in a variable.
+
+> oidc_id=$(aws eks describe-cluster --name cw-cluster --query "cluster.identity.oidc.issuer" --output text | cut -d '/' -f 5)
+
+- Determine whether an IAM OIDC provider with your cluster's ID is already in your account.
+
+> aws iam list-open-id-connect-providers | grep $oidc_id
+
+If output is returned from the previous command, then you already have a provider for your cluster and you can skip the next step. If no output is returned, then you must create an IAM OIDC provider for your cluster.
+
+- Create an IAM OIDC identity provider for your cluster with the following command. Replace my-cluster with your own value.
+
+> eksctl utils associate-iam-oidc-provider --region=us-east-1 --cluster=cw-cluster --approve
+
+### Creating the Amazon EBS CSI driver IAM role for service accounts
+
+- The Amazon EBS CSI plugin requires IAM permissions to make calls to AWS APIs on your behalf. 
+
+- When the plugin is deployed, it creates and is configured to use a service account that's named ebs-csi-controller-sa. The service account is bound to a Kubernetes clusterrole that's assigned the required Kubernetes permissions.
+
+#### To create your Amazon EBS CSI plugin IAM role with eksctl
+
+- Create an IAM role and attach the required AWS managed policy with the following command. Replace cw-cluster with the name of your cluster. The command deploys an AWS CloudFormation stack that creates an IAM role, attaches the IAM policy to it, and annotates the existing ebs-csi-controller-sa service account with the Amazon Resource Name (ARN) of the IAM role.
+
+> eksctl create iamserviceaccount \
+  --name ebs-csi-controller-sa \
+  --namespace kube-system \
+  --cluster cw-cluster \
+  --attach-policy-arn arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy \
+  --approve \
+  --role-only \
+  --role-name AmazonEKS_EBS_CSI_DriverRole
+
+### Adding the Amazon EBS CSI add-on
+
+#### To add the Amazon EBS CSI add-on using eksctl
+
+- Run the following command. Replace cw-cluster with the name of your cluster, 111122223333 with your account ID, and AmazonEKS_EBS_CSI_DriverRole with the name of the IAM role created earlier.
+
+```bash
+eksctl create addon --name aws-ebs-csi-driver --cluster cw-cluster --service-account-role-arn arn:aws:iam::111122223333:role/AmazonEKS_EBS_CSI_DriverRole --force
+```
+
+- Firstly, check the StorageClass object in the cluster. 
+
+> kubectl get sc (storageclass)
+
+> kubectl describe sc/gp2
+
+- code storage-class.yaml
+
+> kubectl apply -f storage-class.yaml
+
+> kubectl get sc
+
+- Create a persistentvolumeclaim with the following settings and show that new volume is created on aws management console.
+
+- code clarus-pv-claim.yaml
+
+> kubectl apply -f clarus-pv-claim.yaml
+
+> kubectl get pv,pvc
+
+- Create a pod with the following settings.
+
+- code pod-with-dynamic-storage.yaml
+
+> kubectl apply -f pod-with-dynamic-storage.yaml
+
+> kubectl exec -it test-aws -- bash
+
+> kubectl delete storageclass aws-standard
+
+> kubectl get storageclass
+
+> k delete -f .
+
+## Part 4 - Ingress
+
+- Download the lesson folder from github.
+
+The directory structure is as follows:
+
+```text
+ingress-yaml-files
+├── ingress-service.yaml
+├── php-apache
+│   └── php-apache.yaml
+└── to-do
+    ├── db-deployment.yaml
+    ├── db-pvc.yaml
+    ├── db-service.yaml
+    ├── web-deployment.yaml
+    └── web-service.yaml
+
+- Alternatively you can clone some part of your repository as show below:
+
+```shell
+sudo yum install git -y
+mkdir repo && cd repo
+git init
+git remote add origin <origin-url>
+git config core.sparseCheckout true
+echo "subdirectory/under/repo/" >> .git/info/sparse-checkout  # do not put the repository folder name in the beginning
+git pull origin <branch-name>
+```
+
+### Steps of execution:
+
+1. We will deploy the `to-do` app first and look at some key points.
+
+2. And then deploy the `php-apache` app and highlights some important points.
+
+> kubectl apply -f .  (her iki dosyada da calistir)
+
+## Ingress
+
+Briefly explain ingress and ingress controller. For additional information a few portal can be visited like;
+
+- https://kubernetes.io/docs/concepts/services-networking/ingress/
+  
+- https://banzaicloud.com/blog/k8s-ingress/
+  
+- Open the offical [ingress-nginx]( https://kubernetes.github.io/ingress-nginx/deploy/ ) explain the `ingress-controller` installation steps for different architecture.
+
+
+> kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.7.0/deploy/static/provider/cloud/deploy.yaml
+
+- Guncellenmis halini yukaridaki siteden al.
+
+
+- Now, check the contents of the `ingress-service`.
+
+- code ingress-service.yaml
+
+> kubectl apply -f ingress-service.yaml
+
+> kubectl get ingress (ing)
+
+On browser, type this  ( a26be57ce12e64883a5ad050025f2c5b-94ab4c4b033cf5fa.elb.eu-central-1.amazonaws.com ), you must see the to-do app web page. If you type `a26be57ce12e64883a5ad050025f2c5b-94ab4c4b033cf5fa.elb.eu-central-1.amazonaws.com/load`, then the apache-php page, "OK!". Notice that we don't use the exposed ports at the services.
+
+- Delete the cluster
+
+> eksctl get cluster --region us-east-1
+
+> eksctl delete cluster cw-cluster --region us-east-1
+
+- Do no forget to delete related ebs volumes.
+
+
+
+
+
