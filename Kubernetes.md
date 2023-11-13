@@ -1272,7 +1272,135 @@ On browser, type this  ( a26be57ce12e64883a5ad050025f2c5b-94ab4c4b033cf5fa.elb.e
 
 - Do no forget to delete related ebs volumes.
 
+<POD> <SCHEDULING>
+
+## Part 2 - Scheduling Pods
+
+- Taints node'a, toleratins pod'a eklenir.
+
+- In Kubernetes, scheduling refers to making sure that Pods are matched to Nodes so that Kubelet can run them.
+
+- A scheduler watches for newly created Pods that have no Node assigned. For every Pod that the scheduler discovers, the scheduler becomes responsible for finding the best Node for that Pod to run on.
+
+- kube-scheduler is the default scheduler for Kubernetes and runs as part of the control plane.
+
+- For every newly created pod or other unscheduled pods, kube-scheduler selects an optimal node for them to run on. However, every container in pods has different requirements for resources and every pod also has different requirements. Therefore, existing nodes need to be filtered according to the specific scheduling requirements.
+
+- In a cluster, Nodes that meet the scheduling requirements for a Pod are called feasible nodes. If none of the nodes are suitable, the Pod remains unscheduled until the scheduler is able to place it.
+
+- We can constrain a Pod so that it can only run on a particular set of Node(s). There are several ways to do this. Let's start with nodeName.
+
+## Part 3 - nodeName
+
+- For this lesson, we have two instances. The one is the controlplane and the other one is the worker node. As a practice, kube-scheduler doesn't assign a pod to a controlplane. Let's see this.
+
+- Create yaml file named `clarus-deploy.yaml` and explain its fields.
+
+> code clarus-deploy.yaml
+
+> kubectl apply -f .
+
+> kubectl get po -o wide
+
+> kubectl get node <conrol-plane-name> (kube-master) -o yaml
+- Bu komut ile master node yaml dosyasi icersinde bunu gor  
+  
+  ' -  taints:
+      - effect: NoSchedule
+        key: node-role.kubernetes.io/control-plane'
+
+> kubectl taint nodes kube-master node-role.kubernetes.io/control-plane:NoSchedule- 
+- Bu etiketi cikartmak icin komutu giriyoruz. 
+
+Taint'i cikartmak icin diger yontem edit etmek
+
+> kubectl edit node kube-master 
+
+> kubectl delete -f .
+
+> kubectl apply -f .
+
+> kubectl get po -o wide
+- Burada NODE sutunun da podlarin dengeli bir sekilde master ve worker node'lara dagildigini gor. Yukaridaki komutttan dolayi
+
+> kubectl delete -f .
+
+- `nodeName` is the simplest form of node selection constraint, but due to its limitations, it is typically not used. nodeName is a field of PodSpec. If it is non-empty, the scheduler ignores the pod and the kubelet running on the named node tries to run the pod. Thus, if nodeName is provided in the PodSpec, it takes precedence over the other methods for node selection.
+
+- Some of the limitations of using nodeName to select nodes are:
+
+  - If the named node does not exist, the pod will not be run, and in some cases may be automatically deleted.
+  - If the named node does not have the resources to accommodate the pod, the pod will fail and its reason will indicate why, for example, OutOfmemory or OutOfcpu.
+  - Node names in cloud environments are not always predictable or stable.
+
+- Let's try this. First list the names of nodes.
+
+##### Podlari istedigim node'a gonderme. 
+
+- Bu yontem cok tercif EDILMEYEN bir yontem.
+
+> code clarus-deploy-nodeName.yaml
+- Yaml dosyaysini update ediyoruz. Son satira nodeName: kube-master ekledik.
+
+> kubectl apply -f clarus-deploy-nodeName.yaml
+
+> kubectl get po -o wide
+- tum podlarin kube-master'a gonderilir.
+
+## Part 4 - nodeSelector
+
+- `nodeSelector` is the simplest recommended form of node selection constraint. nodeSelector is a field of PodSpec. It specifies a map of key-value pairs. For the pod to be eligible to run on a node, the node must have each of the indicated key-value pairs as labels (it can have additional labels as well). The most common usage is one key-value pair.
+
+- Let's learn how to use nodeSelector.
+
+- First, we will add a label to controlplane node with the following command. 
+
+> kubectl label nodes <node-name> <label-key>=<label-value>
+- Herhangi bir kubernetes objesine bu komutla etiket ekleyebiliriz.
+
+> kubectl label nodes kube-master size=large
+
+> kubectl describe kube-master
+- Label'lari gor
+
+> kubectl get nodes --show-labels
+
+> code clarus-deploy-nodSelector
+
+> kubectl apply -f clarus-deploynodeSelector.yaml
+
+> kubectl get po -o wide
+
+> kubectl delete -f .
+
+## Part 5 - Node Affinity
+
+- `Node affinity`  is conceptually similar to nodeSelector, but it greatly expands the types of constraints we can express. It allows us to constrain which nodes our pod is eligible to be scheduled on, based on labels on the node.
+
+- There are currently three types of node affinity:
+
+  - requiredDuringSchedulingIgnoredDuringExecution
+  - preferredDuringSchedulingIgnoredDuringExecution
+
+- Let's analyze this long sentence.
+
+| Types                                           | DuringScheduling | DuringExecution |
+| ------------------------------------------------| ---------------- | --------------- |
+| requiredDuringSchedulingIgnoredDuringExecution  | required         | Ignored         |
+| preferredDuringSchedulingIgnoredDuringExecution | preferred        | Ignored         |
 
 
+- The first one (requiredDuringSchedulingIgnoredDuringExecution) specifies rules that must be met for a pod to be scheduled onto a node (similar to nodeSelector but using a more expressive syntax), while the second one (preferredDuringSchedulingIgnoredDuringExecution) specifies preferences that the scheduler will try to enforce but will not guarantee. For example, we specify labels for nodes and nodeSelectors for pods.
+Later, the labels of the node are changed. If we use the first one (requiredDuringSchedulingIgnoredDuringExecution), the pod is not be scheduled. Let's see this.
 
+- We will update clarus-deploy.yaml as below. We will add an affinity field instead of nodeSelector.
 
+> code clarus-deploy-nodeAffinity
+
+- This node affinity rule says the pod can only be placed on a node with a label whose key is size and whose value is large or medium.
+
+> kubectl get nodes --show-labels
+- We have already labeled the controlplane node with `size=large` key-value pair. Let's see.
+
+> kubectl label node kube-master size-
+- Delete `size=large` label from `kube-master` node.
