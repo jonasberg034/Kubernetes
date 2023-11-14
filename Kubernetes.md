@@ -98,6 +98,7 @@ There are additional issues related this subject like louse coupling, but we dis
 > kubectl exec <pod-name> -- date
 > kubectl exec <pod-name> -- cat /usr/share/nginx/html/index.html
 > kubectl exec <pod-name> -- ls
+> kubectl exec <pod-name> -- printenv | grep KUBERNETES
 - Execute a command in a container.
 
 > kubectl exec -it <pod-name> -- bash
