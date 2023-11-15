@@ -1396,7 +1396,7 @@ Later, the labels of the node are changed. If we use the first one (requiredDuri
 
 - We will update clarus-deploy.yaml as below. We will add an affinity field instead of nodeSelector.
 
-> code clarus-deploy-nodeAffinity
+> code clarus-deploy-nodeAffinity.yaml
 
 - This node affinity rule says the pod can only be placed on a node with a label whose key is size and whose value is large or medium.
 
@@ -1405,3 +1405,108 @@ Later, the labels of the node are changed. If we use the first one (requiredDuri
 
 > kubectl label node kube-master size-
 - Delete `size=large` label from `kube-master` node.
+
+> kubectl apply -f clarus-deploy-nodeAffinity.yaml
+
+> kubectl get po -o wide
+-podlarin status'unu gor. Pending.
+
+> code clarus-deploy-nodeAffinity1.yaml
+
+> kubectl apply -f clarus-deploy-nodeAffinity1.yaml
+
+> ### Node affinity weight
+
+- You can specify a weight between 1 and 100 for each instance of the preferredDuringSchedulingIgnoredDuringExecution affinity type. When the scheduler finds nodes that meet all the other scheduling requirements of the Pod, the scheduler iterates through every preferred rule that the node satisfies and adds the value of the weight for that expression to a sum.
+
+- The final sum is added to the score of other priority functions for the node. Nodes with the highest total score are prioritized when the scheduler makes a scheduling decision for the Pod.
+
+> kubectl get po -o wide
+
+> kubectl get po -o wide | grep master | wc -l 
+- Kac adet pod caistigini gosterir master noe'da.
+
+> k delete -f .
+
+- The `IgnoredDuringExecution` part of the names means that similar to how nodeSelector works, if labels on a node change at runtime such that the affinity rules on a pod are no longer met, the pod continues to run on the node.
+
+## Part 6 - Pod Affinity
+
+> code clarus-db.yaml
+
+> kubectl apply -f clarus-db.yaml
+
+> kubectl get po -o wide
+
+> code clarusshop-deploy.yaml
+- Amacimiz bu yaml dosyasi ile olusmus frontend podunu dataase podu ile ayn node'a koymak. Her iki yaml dosyasini incelersek ne demek istedigi ortaya cikar.
+
+> kubectl get po -o wide
+
+> k get nodes --show-labels
+
+> kubectl delete -f clarusshop-deploy.yaml
+> kubectl delete -f clarus-db.yaml
+
+## Part 7 - Taints and Tolerations
+
+- Taints allow a node to repel a set of pods.
+
+- Tolerations are applied to pods, and allow (but do not require) the pods to schedule onto nodes with matching taints.
+
+- Taints and tolerations work together to ensure that pods are not scheduled onto inappropriate nodes. One or more taints are applied to a node; this marks that the node should not accept any pods that do not tolerate the taints.
+
+- First of all, we will see that there is no taint in any node.
+
+```bash
+kubectl get no
+kubectl describe node kube-master | grep -i taint
+kubectl describe node kube-worker | grep -i taint
+```
+- As we see, there is no taint for our nodes.
+
+- We can add taint in the format below.
+
+```bash
+kubectl taint nodes node-name key=value:taint-effect
+```
+
+- Let's add a taint to the kube-worker using `kubectl taint` command.
+
+```bash
+kubectl taint nodes kube-worker clarus=way:NoSchedule
+```
+
+- This command places a taint on node kube-worker. The taint has key clarus, value way, and taint effect NoSchedule. ` This means that no pod will be able to schedule onto kube-worker unless it has matching toleration.`
+
+- Check that there is a taint for kube-worker.
+
+```bash
+kubectl describe node kube-worker | grep -i taint
+```
+
+> code clarus-yaml-taint.yaml
+
+```bash
+kubectl apply -f clarus-deploy.yaml
+```
+```bash
+kubectl get po -o wide
+```
+
+- We specify toleration for a pod in the PodSpec. Both of the following tolerations "match" the taint created by the kubectl taint line above, and thus a pod with either toleration would be able to schedule onto kube-worker:
+
+` !!! Toleration varsa ilk once onu dikkate alir `.
+
+> code clarus-deploy-toleration.yaml
+
+```bash
+kubectl get po -o wide
+```
+
+```bash
+kubectl delete -f clarus-deploy-toleraion.yaml
+```
+```bash
+kubectl taint nodes kube-worker clarus=way:NoSchedule-
+```
