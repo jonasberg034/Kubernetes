@@ -44,6 +44,8 @@
 > code mypod.yaml
 - yaml dosyasi repoda yaml-files dosyasinda.
 
+> kubectl run nginx-j --image=nginx --dry-run=client -o yaml > nginx.yaml
+
 > kubectl create -f mypod.yaml 
 - Create a pod with `kubectl create` command.
 
@@ -57,7 +59,9 @@
 - Show details of pod.
 
 > kubectl get pods/nginx-pod -o yaml
-- Show details of pod in `yaml format`.
+- Show details of pod in `yaml format`
+
+> kubectl edit pod redis
 
 > kubectl delete -f mypod.yaml veya - kubectl delete pod nginx-pod
 - Delete the pod.
@@ -72,6 +76,10 @@
 
 > kubectl apply -f myreplicaset.yaml
 - Create the replicaset with `kubectl apply` command.
+
+> kubectl replace -f replicaset.definition.yaml
+
+> kubectl scale --replicaset=6 -f replicaset.definition.yaml
 
 <PODSELECTOR
 
