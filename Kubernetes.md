@@ -64,6 +64,8 @@
 > kubectl edit pod redis
 
 > kubectl delete -f mypod.yaml veya - kubectl delete pod nginx-pod
+
+> kubectl delete pods --all
 - Delete the pod.
 
 <REPLICASET 
@@ -80,6 +82,8 @@
 > kubectl replace -f replicaset.definition.yaml
 
 > kubectl scale --replicaset=6 -f replicaset.definition.yaml
+
+> kubectl edit rs new-replica-set
 
 <PODSELECTOR
 
