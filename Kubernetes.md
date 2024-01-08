@@ -46,11 +46,14 @@
 
 > kubectl run nginx-j --image=nginx --replicas=4 --dry-run=client -o yaml > nginx.yaml
 
+> kubectl run redis --labels='tier=db' --image=redis:alpine
+
 > kubectl create -f mypod.yaml 
 - Create a pod with `kubectl create` command.
 
-> kubectl get pods
-- List the pods.
+> kubectl get pods -l env=dev
+> k get po -l env=prod,bu=finance,tier=frontend
+> kubectl get pods --show-labels=true
 
 > kubectl get pods -o wide
 - List pods in `ps output format` with more information (such as node name).
@@ -190,7 +193,7 @@ kube-system       Active   4h37m
 - Alternatively, you can create namespace using below command:
 > kubectl create namespace <namespace-name>
 
-> kubectl create deployment default-ns --image=nginx  
+> kubectl create deployment default-ns --image=nginx --replicas=2
 - default namespace'te nginx imajindan default-ns deployment'unu olusturan komut
 
 > kubectl create deployment clarus-ns --image=nginx -n=clarus-namespace  
