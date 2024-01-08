@@ -44,7 +44,7 @@
 > code mypod.yaml
 - yaml dosyasi repoda yaml-files dosyasinda.
 
-> kubectl run nginx-j --image=nginx --dry-run=client -o yaml > nginx.yaml
+> kubectl run nginx-j --image=nginx --replicas=4 --dry-run=client -o yaml > nginx.yaml
 
 > kubectl create -f mypod.yaml 
 - Create a pod with `kubectl create` command.
@@ -175,8 +175,10 @@ kube-node-lease   Active   4h37m
 kube-public       Active   4h37m
 kube-system       Active   4h37m
 
-> kubectl get -n pods kube-system  
+> kubectl get pods -n kube-system  
 - Kube-system name-space'indeki tum podlari gosterir
+
+> kubectl get svc -n marketing
 
 # code my-namespace.yaml
 - yaml dosyasi repoda yaml-files dosyasinda.
@@ -200,6 +202,8 @@ kube-system       Active   4h37m
 
 > kubectl get deployment -o wide --all-namespaces
 - List the all deployments.
+
+> kubectl config set-context $(kubectl config current-context) --namespace=dev
 
 > kubectl delete ns clarus-namespace
 - Namespace'i silmek tehlike olabilir. Ns'i silmek icindeki butun objeleri silmek demektir. Yaml dosayasini sildiginizde dosyadaki eger ozel belirtilen namespace varsa o da silinir. 
@@ -264,6 +268,10 @@ https://kubernetes.io/docs/concepts/workloads/controllers/daemonset/
 > kubectl scale deploy web-flask-deploy --replicas=0
 > kubectl scale deploy web-flask-deploy --replicas=3
 -Podlarin IP'leri degisti ama service objesi sayesinde bundan etkilenmiyoruz.
+
+> kubectl expose pod nginx --type=NodePort --port=80 --node-port=30080 --name=nginx-service --dry-run=client -o yaml
+
+
 
 ### NodePort
 
