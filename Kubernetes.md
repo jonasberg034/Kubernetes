@@ -1328,19 +1328,42 @@ On browser, type this  ( a26be57ce12e64883a5ad050025f2c5b-94ab4c4b033cf5fa.elb.e
 
 > kubectl get po -o wide
 
-> kubectl get node <conrol-plane-name> (kube-master) -o yaml
+> kubectl get node <conrol-plane-name> kube-master -o yaml
 - Bu komut ile master node yaml dosyasi icersinde bunu gor  
   
   ' -  taints:
       - effect: NoSchedule
         key: node-role.kubernetes.io/control-plane'
 
-> kubectl taint nodes kube-master node-role.kubernetes.io/control-plane:NoSchedule- 
-- Bu etiketi cikartmak icin komutu giriyoruz. 
+> kubectl taint nodes <node-name> kube-master <key=value> node-role.kubernetes.io/control-plane:NoSchedule-
+- NoSchedule etiketini cikartmak icin komut. (sonunda - isareti var) 
+
+> kubectl taint nodes node1 app=blue:NoSchedule
+- bu komuttan sonra pod icin tolerations hazirlamak icin pod'un yaml dosyasina gidip tolerations ekliyoruz
+
+```bash
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx
+spec:
+  nodeName: node01
+  containers:
+  -  image: nginx
+     name: nginx
+  tolerations:
+  - key: app
+    operator: Equal
+    value: blue
+    effect: NoSchedule 
+
+```
 
 Taint'i cikartmak icin diger yontem edit etmek
 
 > kubectl edit node kube-master 
+
 
 > kubectl delete -f .
 
