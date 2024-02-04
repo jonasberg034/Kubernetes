@@ -71,6 +71,25 @@
 > kubectl delete pods --all
 - Delete the pod.
 
+<STATICPODS
+
+> kubectl get pods -A
+
+> kubectl get pods kube-api-server-control-plane -n kube-system -o yaml
+
+> crictl ps
+
+> kubectl describe po -A | grep kube-apiserver
+
+> kubectl run static-busybox --image=busybox --restart=never --dry-run=client -o yaml --command -- sleep 1000 > static-busybox.yaml
+Bu komuttan sonra sunu gir:
+> cp static-busybox.yaml /etc/kubernetes/manifests/
+
+> cat /var/lib/kubelet/config.yaml
+
+> ls /etc/kubernetes/manifests
+
+
 <REPLICASET 
 
 > code myreplicaset.yaml 
@@ -1408,6 +1427,8 @@ Taint'i cikartmak icin diger yontem edit etmek
 - Herhangi bir kubernetes objesine bu komutla etiket ekleyebiliriz.
 
 > kubectl label nodes kube-master size=large
+
+> kubectl get nodes node01 --show-labels
 
 > kubectl describe kube-master
 - Label'lari gor
